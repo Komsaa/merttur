@@ -300,7 +300,7 @@ export default function JobsClient({ jobs: initialJobs, drivers, vehicles }: Pro
                 </div>
                 {/* İşler */}
                 {dayJobs.length > 0 && (() => {
-                  const driverNames = [...new Set(dayJobs.map((j) => j.driver?.name ?? "__none__"))];
+                  const driverNames = Array.from(new Set(dayJobs.map((j) => j.driver?.name ?? "__none__")));
                   return driverNames.map((driverName) => {
                     const driverJobs = dayJobs.filter((j) => (j.driver?.name ?? "__none__") === driverName);
                     return (
