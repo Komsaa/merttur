@@ -1,0 +1,357 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ AUTH (NextAuth) ============
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("admin") // admin, viewer
+  createdAt     DateTime  @default(now())
+  accounts      Account[]
+  sessions      Session[]
+}
+
+// ============ ŞÖFÖRLER ============
+model Driver {
+  id        String  @id @default(cuid())
+  name      String
+  phone     String?
+  photo     String? // dosya yolu
+  status    String  @default("active") // active, inactive, izinli
+  notes     String? @db.Text
+
+  // Ehliyet
+  licenseNumber String?
+  licenseClass  String? // B, D, E...
+  licenseExpiry DateTime? // ehliyet yenileme tarihi (D sınıfı 5 yılda bir)
+  licenseFile   String?
+
+  // SRC-2 Belgesi (5 yılda bir yenilenir)
+  srcNumber String?
+  srcExpiry DateTime?
+  srcFile   String?
+
+  // Psikoteknik Belgesi (5 yılda bir, bazı yerlerde 2 yılda bir)
+  psychotechExpiry DateTime?
+  psychotechFile   String?
+
+  // Adli Sicil Kaydı (yıllık yenilenir, 3 ay geçerlilik)
+  criminalRecordDate   DateTime? // belgenin alınma tarihi
+  criminalRecordExpiry DateTime? // genellikle 3 ay sonrası
+  criminalRecordFile   String?
+
+  // Sağlık Raporu (okul servisi için yıllık)
+  healthReportExpiry DateTime?
+  healthReportFile   String?
+
+  // İkametgah
+  address          String?
+  residenceDocDate DateTime?
+  residenceDocFile String?
+
+  // İlişkiler
+  vehicleId   String?
+  vehicle     Vehicle?    @relation(fields: [vehicleId], references: [id])
+  jobs        Job[]
+  fuelEntries FuelEntry[]
+  salaries    Salary[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ ARAÇLAR ============
+model Vehicle {
+  id       String  @id @default(cuid())
+  plate    String  @unique // "45 J 9443"
+  brand    String? // Mercedes, Ford, Volkswagen...
+  model    String? // Sprinter, Transit...
+  year     Int?
+  capacity Int? // yolcu kapasitesi
+  color    String? // Sarı (J plaka zorunlu)
+  photo    String?
+  status   String  @default("active") // active, inactive, serviste
+  notes    String? @db.Text
+
+  // Güzergah İzin Belgesi (yıllık)
+  routePermitNumber String?
+  routePermitExpiry DateTime?
+  routePermitFile   String?
+
+  // Teknik Muayene - TÜVTÜRK (ticari araçlar 6 ayda bir!)
+  inspectionExpiry DateTime?
+  inspectionFile   String?
+
+  // Zorunlu Trafik Sigortası (yıllık)
+  insuranceCompany  String?
+  insurancePolicyNo String?
+  insuranceExpiry   DateTime?
+  insuranceFile     String?
+
+  // Kasko (opsiyonel ama önerilir)
+  kaskoExpiry DateTime?
+  kaskoFile   String?
+
+  // Okul Servisi Uygunluk Belgesi / J Plaka (her yıl eylülde yenilenir)
+  approvalExpiry  DateTime?
+  approvalFile    String?
+  plateAuthExpiry DateTime? // J plaka tescil tarihi
+
+  // İlişkiler
+  drivers     Driver[]
+  jobs        Job[]
+  fuelEntries FuelEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ İŞLER / SEFERLER ============
+model Job {
+  id    String @id @default(cuid())
+  title String
+  type  String // okul, personel, özel, transfer, gezi
+
+  // Müşteri/Sözleşme bilgisi
+  clientName     String?
+  contractAmount Float? // aylık/yıllık sözleşme tutarı
+
+  date      DateTime
+  startTime String // "07:30"
+  endTime   String? // "17:00"
+
+  startLocation String? // nereden
+  endLocation   String? // nereye
+  route         String? @db.Text // güzergah açıklaması
+
+  status String @default("planned") // planned, active, completed, cancelled
+
+  driverId  String?
+  driver    Driver?  @relation(fields: [driverId], references: [id])
+  vehicleId String?
+  vehicle   Vehicle? @relation(fields: [vehicleId], references: [id])
+
+  revenue Float? // bu işten kazanılan
+  notes   String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ YAKIT TAKİBİ ============
+model FuelEntry {
+  id String @id @default(cuid())
+
+  vehicleId String
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  driverId String?
+  driver   Driver? @relation(fields: [driverId], references: [id])
+
+  date          DateTime
+  liters        Float
+  pricePerLiter Float?
+  totalAmount   Float
+  odometer      Int? // km
+
+  station     String? // istasyon adı
+  paymentType String  @default("veresiye") // veresiye, nakit, kart
+
+  receiptPhoto String? // fiş fotoğrafı dosya yolu
+  notes        String? @db.Text
+
+  // WhatsApp otomatik parse metadata
+  parsedFrom String? // whatsapp, manual, ocr
+  rawText    String? @db.Text // orijinal mesaj
+
+  createdAt DateTime @default(now())
+}
+
+// ============ FİNANS ============
+model FinanceEntry {
+  id       String @id @default(cuid())
+  type     String // income, expense
+  category String // yakıt, maaş, bakım, sigorta, harç, sözleşme, sefer, diğer
+
+  amount      Float
+  date        DateTime
+  description String? @db.Text
+
+  vehicleId String?
+  driverId  String?
+  jobId     String?
+
+  receiptFile String?
+  invoiceNo   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ MAAŞLAR ============
+model Salary {
+  id String @id @default(cuid())
+
+  driverId String
+  driver   Driver @relation(fields: [driverId], references: [id])
+
+  month Int // 1-12
+  year  Int
+
+  baseAmount  Float // sabit kısım
+  bonusAmount Float @default(0) // prim/ek
+  totalAmount Float // toplam
+
+  jobCount Int @default(0) // o ay kaç iş yaptı
+
+  paid   Boolean   @default(false)
+  paidAt DateTime?
+
+  notes String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([driverId, month, year])
+}
+
+// ============ CARİLER ============
+model Contact {
+  id      String @id @default(cuid())
+  name    String
+  type    String // musteri, tedarikci, her_ikisi
+  phone   String?
+  email   String?
+  address String?
+  taxNo   String?   // vergi no
+  notes   String?   @db.Text
+
+  transactions ContactTransaction[]
+  checks       Check[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Cari Hareketleri (alacak, borç, fatura, ödeme)
+model ContactTransaction {
+  id        String  @id @default(cuid())
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  // fatura_kesilen, odeme_alindi, borc_girisi, odeme_yapildi, iade, veresiye
+  type      String
+  // alacak = bize borçlu (müşteri), borc = bize borç (tedarikçi)
+  direction String
+
+  amount      Float
+  paidAmount  Float    @default(0)
+  date        DateTime
+  dueDate     DateTime? // vade tarihi
+  status      String    @default("bekliyor") // bekliyor, odendi, kismi, gecikti, iptal
+
+  description String?
+  invoiceNo   String?
+  category    String?   // mazot, sanayi, vergi, servis, kira, diger
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Çek Takibi
+model Check {
+  id        String   @id @default(cuid())
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id])
+
+  direction String   // aldik (müşteriden), verdik (tedarikçiye)
+  amount    Float
+  dueDate   DateTime // vade tarihi
+  bankName  String?
+  checkNo   String?
+
+  // bekliyor, tahsil_edildi, iade_edildi, karsilıksız
+  status String @default("bekliyor")
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============ GÖREVLER (Kişisel To-Do) ============
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  category    String    // evrak, bakim, sigorta, vergi, toplanti, diger
+  priority    String    @default("normal") // low, normal, high, urgent
+
+  // Zaman
+  dueDate     DateTime? // son tarih
+  dueTime     String?   // "14:00" gibi
+  recurrence  String?   // none, daily, weekly, monthly, quarterly (3 aylık)
+
+  // Tamamlama
+  status      String    @default("pending") // pending, in_progress, done, cancelled
+  completedAt DateTime?
+  completedBy String?   // kim tamamladı
+
+  // İlişkilendirme (opsiyonel)
+  vehicleId   String?
+  driverId    String?
+  notes       String?   @db.Text
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ============ AYARLAR ============
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+}
