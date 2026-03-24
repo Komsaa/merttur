@@ -115,7 +115,6 @@ async function getDashboardData() {
       { key: "kasko", label: "Kasko", expiry: v.kaskoExpiry },
     ];
     for (const doc of vehicleDocs) {
-      vehicleDocs;
       allDocs.push({
         id: v.id,
         name: v.plate,

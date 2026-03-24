@@ -47,7 +47,15 @@ async function getData() {
       totalReceivable,
       totalPayable,
       overdueReceivable,
-      netBalance: totalReceivable - totalPayable, // pozitif = bize borçlu
+      netBalance: totalReceivable - totalPayable,
+      transactions: c.transactions.map((t) => ({
+        ...t,
+        contact: { id: c.id, name: c.name, type: c.type },
+      })),
+      checks: c.checks.map((ch) => ({
+        ...ch,
+        contact: { id: c.id, name: c.name },
+      })),
     };
   });
 
