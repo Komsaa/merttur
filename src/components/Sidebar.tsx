@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  Banknote,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -52,6 +53,11 @@ const navItems = [
     href: "/panel/finans",
     icon: TrendingUp,
     label: "Finans",
+  },
+  {
+    href: "/panel/maaslar",
+    icon: Banknote,
+    label: "Maaşlar",
   },
   {
     href: "/panel/odeme",

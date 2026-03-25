@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Fuel, FileText, User } from "lucide-react";
 import EditVehicleForm from "./EditVehicleForm";
 import DocRow from "@/components/DocRow";
+import ExtraDocuments from "@/components/ExtraDocuments";
 
 interface Props { params: { id: string } }
 
@@ -23,6 +24,11 @@ async function getVehicle(id: string) {
 export default async function VehicleDetailPage({ params }: Props) {
   const vehicle = await getVehicle(params.id);
   if (!vehicle) notFound();
+
+  const extraDocs = await (await import("@/lib/prisma")).prisma.document.findMany({
+    where: { entityType: "vehicle", entityId: params.id },
+    orderBy: { createdAt: "desc" },
+  });
 
   const totalFuel = vehicle.fuelEntries.reduce((s, e) => s + e.totalAmount, 0);
   const totalLiters = vehicle.fuelEntries.reduce((s, e) => s + e.liters, 0);
@@ -56,6 +62,8 @@ export default async function VehicleDetailPage({ params }: Props) {
             <DocRow label="Okul Servisi Uygunluk / J Plaka" expiry={vehicle.approvalExpiry} entityType="vehicle" entityId={vehicle.id} docType="approval" fileUrl={vehicle.approvalFile} notes="Her yıl Eylülde yenilenir" />
             <DocRow label="Kasko" expiry={vehicle.kaskoExpiry} entityType="vehicle" entityId={vehicle.id} docType="kasko" fileUrl={vehicle.kaskoFile} />
           </div>
+
+          <ExtraDocuments entityType="vehicle" entityId={vehicle.id} initialDocs={extraDocs} />
 
           {/* Yakıt Geçmişi */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">

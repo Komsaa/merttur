@@ -349,6 +349,19 @@ model Task {
   updatedAt   DateTime  @updatedAt
 }
 
+// ============ ÖZEL BELGELER ============
+model Document {
+  id         String    @id @default(cuid())
+  name       String                        // belge adı (serbest)
+  expiry     DateTime?
+  fileUrl    String?
+  notes      String?   @db.Text
+  entityType String                        // "driver" | "vehicle"
+  entityId   String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
 // ============ AYARLAR ============
 model Setting {
   id    String @id @default(cuid())

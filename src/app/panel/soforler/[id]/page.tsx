@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Phone, FileText, Car, Clock } from "lucide-react";
 import EditDriverForm from "./EditDriverForm";
 import DocRow from "@/components/DocRow";
+import ExtraDocuments from "@/components/ExtraDocuments";
 
 interface Props {
   params: { id: string };
@@ -33,6 +34,11 @@ async function getDriver(id: string) {
 export default async function DriverDetailPage({ params }: Props) {
   const driver = await getDriver(params.id);
   if (!driver) notFound();
+
+  const extraDocs = await (await import("@/lib/prisma")).prisma.document.findMany({
+    where: { entityType: "driver", entityId: params.id },
+    orderBy: { createdAt: "desc" },
+  });
 
   const statusLabels: Record<string, string> = {
     planned: "Planlandı",
@@ -95,6 +101,8 @@ export default async function DriverDetailPage({ params }: Props) {
             <DocRow label="Ehliyet" expiry={driver.licenseExpiry} entityType="driver" entityId={driver.id} docType="license" fileUrl={driver.licenseFile} notes={`Sınıf: ${driver.licenseClass ?? "-"} · ${driver.licenseNumber ?? ""}`} />
             <DocRow label="İkametgah Belgesi" expiry={driver.residenceDocDate} entityType="driver" entityId={driver.id} docType="residenceDoc" fileUrl={driver.residenceDocFile} notes={driver.address ?? ""} />
           </div>
+
+          <ExtraDocuments entityType="driver" entityId={driver.id} initialDocs={extraDocs} />
 
           {/* Son Seferler */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
