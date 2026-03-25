@@ -16,11 +16,9 @@ export default function DocUploadButton({ entityType, entityId, docType, fileUrl
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
-  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  async function uploadFile(file: File) {
     setUploading(true);
     try {
       const fd = new FormData();
@@ -30,10 +28,16 @@ export default function DocUploadButton({ entityType, entityId, docType, fileUrl
       fd.append("docType", docType);
 
       const res = await fetch("/api/upload", { method: "POST", body: fd });
+
+      let errMsg = "Yükleme hatası";
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? "Yükleme hatası");
+        try {
+          const err = await res.json();
+          errMsg = err.error ?? errMsg;
+        } catch {}
+        throw new Error(errMsg);
       }
+
       toast.success("Belge yüklendi!");
       router.refresh();
     } catch (err: unknown) {
@@ -42,6 +46,18 @@ export default function DocUploadButton({ entityType, entityId, docType, fileUrl
       setUploading(false);
       if (inputRef.current) inputRef.current.value = "";
     }
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) uploadFile(file);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) uploadFile(file);
   }
 
   return (
@@ -61,16 +77,23 @@ export default function DocUploadButton({ entityType, entityId, docType, fileUrl
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
         disabled={uploading}
-        className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-100 px-2 py-1 rounded-lg transition-colors disabled:opacity-50"
-        title={fileUrl ? "Yeni belge yükle" : "Belge yükle"}
+        className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg transition-colors disabled:opacity-50 ${
+          dragging
+            ? "bg-blue-100 text-blue-700 border border-blue-300 border-dashed"
+            : "text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+        }`}
+        title={fileUrl ? "Yeni belge yükle veya sürükle bırak" : "Belge yükle veya sürükle bırak"}
       >
         {uploading ? (
           <Loader2 className="w-3 h-3 animate-spin" />
         ) : (
           <Upload className="w-3 h-3" />
         )}
-        {fileUrl ? "Güncelle" : "Yükle"}
+        {uploading ? "Yükleniyor..." : fileUrl ? "Güncelle" : "Yükle"}
       </button>
       <input
         ref={inputRef}
