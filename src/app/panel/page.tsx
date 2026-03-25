@@ -6,19 +6,17 @@ import {
   getDaysLeft,
 } from "@/lib/utils";
 import {
-  Users,
-  Truck,
   Fuel,
   AlertTriangle,
-  TrendingUp,
   Calendar,
-  Clock,
   CheckCircle,
-  XCircle,
   ChevronRight,
+  MapPin,
+  Clock,
+  User,
 } from "lucide-react";
 import Link from "next/link";
-import { startOfMonth, endOfMonth, startOfDay, endOfDay, isPast, isToday } from "date-fns";
+import { startOfMonth, endOfMonth, endOfDay } from "date-fns";
 import { CheckSquare } from "lucide-react";
 
 async function getDashboardData() {
@@ -248,41 +246,86 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ===== STAT KARTLARI ===== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={Users}
-          label="Aktif Şöför"
-          value={data.driverCount.toString()}
-          color="blue"
-          href="/panel/soforler"
-        />
-        <StatCard
-          icon={Truck}
-          label="Aktif Araç"
-          value={data.vehicleCount.toString()}
-          color="purple"
-          href="/panel/araclar"
-        />
-        <StatCard
-          icon={Fuel}
-          label="Bu Ay Yakıt"
-          value={formatCurrency(data.monthFuel)}
-          sub={`${data.monthFuelLiters.toFixed(0)} lt`}
-          color="amber"
-          href="/panel/yakit"
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Bu Ay Net"
-          value={formatCurrency(data.monthIncome - data.monthExpense)}
-          sub={`Gelir: ${formatCurrency(data.monthIncome)}`}
-          color={data.monthIncome >= data.monthExpense ? "green" : "red"}
-          href="/panel/finans"
-        />
+      {/* ===== HARİTA + ARAÇ DURUMU ===== */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Harita */}
+        <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="font-bold text-slate-800 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-[#DC2626]" />
+              Filom
+            </h2>
+            <span className="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded-full">Canlı takip: Arvento entegrasyonu yakında</span>
+          </div>
+          <div className="relative" style={{ height: 380 }}>
+            <iframe
+              src="https://www.openstreetmap.org/export/embed.html?bbox=27.5%2C38.5%2C28.3%2C39.0&layer=mapnik&marker=38.7139%2C27.9181"
+              style={{ width: "100%", height: "100%", border: 0 }}
+              loading="lazy"
+            />
+          </div>
+        </div>
+
+        {/* Bugünkü Araçlar */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 className="font-bold text-slate-800 flex items-center gap-2">
+              <Clock className="w-5 h-5 text-blue-500" />
+              Bugünkü Seferler
+            </h2>
+            <Link href="/panel/isler" className="text-xs text-[#DC2626] hover:underline font-medium">Tümü</Link>
+          </div>
+          <div className="flex-1 divide-y divide-slate-50 overflow-y-auto" style={{ maxHeight: 380 }}>
+            {data.todayJobs.length === 0 ? (
+              <div className="px-6 py-10 text-center text-slate-400">
+                <Calendar className="w-10 h-10 text-slate-200 mx-auto mb-2" />
+                <p className="text-sm">Bugün sefer yok</p>
+                <Link href="/panel/isler" className="text-xs text-[#DC2626] hover:underline mt-1 inline-block">Sefer ekle</Link>
+              </div>
+            ) : (
+              data.todayJobs.map((job) => {
+                const statusColors: Record<string, string> = {
+                  planned: "bg-blue-100 text-blue-700",
+                  active: "bg-green-100 text-green-700",
+                  completed: "bg-slate-100 text-slate-500",
+                  cancelled: "bg-red-100 text-red-600",
+                };
+                const statusLabels: Record<string, string> = {
+                  planned: "Planlandı",
+                  active: "Aktif",
+                  completed: "Tamamlandı",
+                  cancelled: "İptal",
+                };
+                return (
+                  <div key={job.id} className="px-5 py-3.5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold text-slate-800 truncate">{job.title}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ml-2 flex-shrink-0 ${statusColors[job.status] ?? "bg-slate-100 text-slate-500"}`}>
+                        {statusLabels[job.status] ?? job.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {job.startTime}{job.endTime ? ` – ${job.endTime}` : ""}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {job.driver?.name ?? "Atanmadı"}
+                      </span>
+                    </div>
+                    {job.vehicle && (
+                      <div className="mt-1 text-xs font-mono text-slate-400">{job.vehicle.plate}</div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* ===== 2 KOLON: Belge Uyarıları + Bugünkü Seferler ===== */}
+      {/* ===== 2 KOLON: Belge Uyarıları + Son Yakıt ===== */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Belge Uyarıları */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-100">

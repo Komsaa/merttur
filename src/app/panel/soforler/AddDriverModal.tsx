@@ -151,6 +151,14 @@ export default function AddDriverModal() {
                     />
                   </div>
                   <div>
+                    <label>Sağlık Raporu Bitiş</label>
+                    <input
+                      type="date"
+                      value={form.healthReportExpiry}
+                      onChange={(e) => set("healthReportExpiry", e.target.value)}
+                    />
+                  </div>
+                  <div>
                     <label>Adli Sicil Alınma Tarihi</label>
                     <input
                       type="date"
@@ -176,14 +184,6 @@ export default function AddDriverModal() {
                       value={form.criminalRecordExpiry}
                       onChange={(e) => set("criminalRecordExpiry", e.target.value)}
                       className="bg-slate-50"
-                    />
-                  </div>
-                  <div>
-                    <label>Sağlık Raporu Bitiş</label>
-                    <input
-                      type="date"
-                      value={form.healthReportExpiry}
-                      onChange={(e) => set("healthReportExpiry", e.target.value)}
                     />
                   </div>
                 </div>

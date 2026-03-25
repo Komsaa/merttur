@@ -4,6 +4,7 @@ import { getDocStatus, getDocStatusColor, getDocStatusLabel, formatDate, getDays
 import Link from "next/link";
 import { ArrowLeft, Fuel, FileText, AlertTriangle, CheckCircle, User, Edit } from "lucide-react";
 import EditVehicleForm from "./EditVehicleForm";
+import DocUploadButton from "@/components/DocUploadButton";
 
 interface Props { params: { id: string } }
 
@@ -18,7 +19,7 @@ async function getVehicle(id: string) {
   });
 }
 
-function DocRow({ label, expiry, note }: { label: string; expiry: Date | null | undefined; note?: string }) {
+function DocRow({ label, expiry, fileUrl, entityId, docType, note }: { label: string; expiry: Date | null | undefined; fileUrl?: string | null; entityId: string; docType: string; note?: string }) {
   const status = getDocStatus(expiry);
   const colorClass = getDocStatusColor(status);
   const daysLeft = getDaysLeft(expiry);
@@ -45,6 +46,7 @@ function DocRow({ label, expiry, note }: { label: string; expiry: Date | null | 
           </div>
         ) : <span className="text-xs text-slate-400">Girilmedi</span>}
         <span className={`text-xs px-2 py-1 rounded-full border font-medium ${colorClass}`}>{getDocStatusLabel(status)}</span>
+        <DocUploadButton entityType="vehicle" entityId={entityId} docType={docType} fileUrl={fileUrl} />
       </div>
     </div>
   );
@@ -80,11 +82,11 @@ export default async function VehicleDetailPage({ params }: Props) {
               <FileText className="w-5 h-5 text-[#DC2626]" />
               Araç Belgeleri
             </h2>
-            <DocRow label="Teknik Muayene (TÜVTÜRK)" expiry={vehicle.inspectionExpiry} note="Ticari araçlar 6 ayda bir — ÇOK ÖNEMLİ!" />
-            <DocRow label="Zorunlu Trafik Sigortası" expiry={vehicle.insuranceExpiry} note={vehicle.insurancePolicyNo ? `Poliçe: ${vehicle.insurancePolicyNo}` : undefined} />
-            <DocRow label="Güzergah İzin Belgesi" expiry={vehicle.routePermitExpiry} />
-            <DocRow label="Okul Servisi Uygunluk / J Plaka" expiry={vehicle.approvalExpiry} note="Her yıl Eylülde yenilenir" />
-            <DocRow label="Kasko" expiry={vehicle.kaskoExpiry} />
+            <DocRow label="Teknik Muayene (TÜVTÜRK)" expiry={vehicle.inspectionExpiry} entityId={vehicle.id} docType="inspection" fileUrl={vehicle.inspectionFile} note="Ticari araçlar 6 ayda bir — ÇOK ÖNEMLİ!" />
+            <DocRow label="Zorunlu Trafik Sigortası" expiry={vehicle.insuranceExpiry} entityId={vehicle.id} docType="insurance" fileUrl={vehicle.insuranceFile} note={vehicle.insurancePolicyNo ? `Poliçe: ${vehicle.insurancePolicyNo}` : undefined} />
+            <DocRow label="Güzergah İzin Belgesi" expiry={vehicle.routePermitExpiry} entityId={vehicle.id} docType="routePermit" fileUrl={vehicle.routePermitFile} />
+            <DocRow label="Okul Servisi Uygunluk / J Plaka" expiry={vehicle.approvalExpiry} entityId={vehicle.id} docType="approval" fileUrl={vehicle.approvalFile} note="Her yıl Eylülde yenilenir" />
+            <DocRow label="Kasko" expiry={vehicle.kaskoExpiry} entityId={vehicle.id} docType="kasko" fileUrl={vehicle.kaskoFile} />
           </div>
 
           {/* Yakıt Geçmişi */}
