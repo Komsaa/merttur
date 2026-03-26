@@ -347,7 +347,7 @@ export default function KrediKartlariClient({ cards: initialCards, currentMonth,
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-semibold text-slate-700">{exp.description}</div>
                                 <div className="text-xs text-slate-400">
-                                  {formatDate(exp.date)} · {cat.label}
+                                  {formatDate(new Date(exp.date))} · {cat.label}
                                   {exp.merchant && ` · ${exp.merchant}`}
                                 </div>
                               </div>
