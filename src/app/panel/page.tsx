@@ -20,7 +20,14 @@ import { CheckSquare } from "lucide-react";
 import TodayJobs from "@/components/TodayJobs";
 import LiveRoutes from "@/components/LiveRoutes";
 
+const EMPTY_DATA = {
+  driverCount: 0, vehicleCount: 0, todayJobs: [], availableVehicles: [], busyVehicles: [],
+  activeRoutes: [], monthFuel: 0, monthFuelLiters: 0, monthIncome: 0, monthExpense: 0,
+  recentFuel: [], urgentTasks: [], alertDocs: [], expiredCount: 0, criticalCount: 0, warningCount: 0,
+};
+
 async function getDashboardData() {
+  try {
   const today = new Date();
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
@@ -182,6 +189,10 @@ async function getDashboardData() {
     criticalCount,
     warningCount,
   };
+  } catch (e) {
+    console.error("Dashboard veri hatası:", e);
+    return EMPTY_DATA;
+  }
 }
 
 export default async function DashboardPage() {

@@ -16,7 +16,7 @@ export default async function GuzergahlarPage() {
         vehicle: true,
         stops: { orderBy: { order: "asc" } },
       },
-    }),
+    }).catch(() => []),
     prisma.driver.findMany({ where: { status: "active" }, orderBy: { name: "asc" } }),
     prisma.vehicle.findMany({ where: { status: "active" }, orderBy: { plate: "asc" } }),
   ]);
