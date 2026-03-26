@@ -10,7 +10,7 @@ const RouteMap = dynamic(() => import("@/components/RouteMap"), { ssr: false });
 
 interface Driver { id: string; name: string }
 interface Vehicle { id: string; plate: string; brand?: string | null; model?: string | null }
-interface Stop { id?: string; order: number; name: string; lat: number | null; lng: number | null; estimatedTime: string; notes?: string }
+interface Stop { id?: string; order: number; name: string; lat: number | null; lng: number | null; estimatedTime: string; notes?: string | null }
 interface Route {
   id: string; name: string; type: string;
   driverId: string | null; vehicleId: string | null;
