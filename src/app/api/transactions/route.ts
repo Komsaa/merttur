@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         description: b.description || null,
         invoiceNo: b.invoiceNo || null,
         category: b.category || null,
+        paymentPriority: b.paymentPriority ? parseInt(b.paymentPriority) : 2,
       },
       include: { contact: true },
     });

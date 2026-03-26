@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
     if (e && typeof e === "object" && "code" in e && (e as { code: string }).code === "P2002") {
       return NextResponse.json({ error: "Bu plaka zaten kayıtlı" }, { status: 400 });
     }
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("POST /api/vehicles error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

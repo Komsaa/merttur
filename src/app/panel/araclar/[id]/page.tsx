@@ -10,17 +10,36 @@ import VehiclePhoto from "./VehiclePhoto";
 
 interface Props { params: { id: string } }
 
-async function getVehicle(id: string) {
-  return prisma.vehicle.findUnique({
-    where: { id },
-    include: {
-      drivers: true,
-      jobs: { take: 10, orderBy: { date: "desc" }, include: { driver: true } },
-      fuelEntries: { take: 10, orderBy: { date: "desc" }, include: { driver: true } },
-    },
-  });
-}
+type VehicleWithRelations = NonNullable<Awaited<ReturnType<typeof prisma.vehicle.findUnique<{
+  where: { id: string };
+  include: {
+    drivers: true;
+    jobs: { take: 10; orderBy: { date: "desc" }; include: { driver: true } };
+    fuelEntries: { take: 10; orderBy: { date: "desc" }; include: { driver: true } };
+  };
+}>>>;
 
+async function getVehicle(id: string): Promise<VehicleWithRelations | null> {
+  try {
+    return await prisma.vehicle.findUnique({
+      where: { id },
+      include: {
+        drivers: true,
+        jobs: { take: 10, orderBy: { date: "desc" }, include: { driver: true } },
+        fuelEntries: { take: 10, orderBy: { date: "desc" }, include: { driver: true } },
+      },
+    });
+  } catch (e) {
+    console.error("getVehicle full query failed, trying basic:", e);
+    try {
+      const v = await prisma.vehicle.findUnique({ where: { id } });
+      if (!v) return null;
+      return { ...v, drivers: [], jobs: [], fuelEntries: [] } as unknown as VehicleWithRelations;
+    } catch {
+      return null;
+    }
+  }
+}
 
 export default async function VehicleDetailPage({ params }: Props) {
   const vehicle = await getVehicle(params.id);

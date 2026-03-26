@@ -19,6 +19,7 @@ import {
   X,
   Banknote,
   Route,
+  CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,11 @@ const navItems = [
     href: "/panel/odeme",
     icon: Wallet,
     label: "Ödemeler / Cari",
+  },
+  {
+    href: "/panel/kredikartlari",
+    icon: CreditCard,
+    label: "Kredi Kartları",
   },
   {
     href: "/panel/gorevler",

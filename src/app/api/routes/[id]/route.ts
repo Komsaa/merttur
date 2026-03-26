@@ -48,8 +48,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     });
     return NextResponse.json(route);
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("PUT /api/routes error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 

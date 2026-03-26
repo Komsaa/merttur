@@ -20,10 +20,16 @@ import { CheckSquare } from "lucide-react";
 import TodayJobs from "@/components/TodayJobs";
 import LiveRoutes from "@/components/LiveRoutes";
 
+type CreditCardAlert = {
+  id: string; name: string; bank: string | null; color: string;
+  daysToPayment: number; paymentDue: Date; periodTotal: number;
+};
+
 const EMPTY_DATA = {
   driverCount: 0, vehicleCount: 0, todayJobs: [], availableVehicles: [], busyVehicles: [],
   activeRoutes: [], monthFuel: 0, monthFuelLiters: 0, monthIncome: 0, monthExpense: 0,
   recentFuel: [], urgentTasks: [], alertDocs: [], expiredCount: 0, criticalCount: 0, warningCount: 0,
+  creditCardAlerts: [] as CreditCardAlert[],
 };
 
 async function getDashboardData() {
@@ -32,7 +38,7 @@ async function getDashboardData() {
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
 
-  const [drivers, vehicles, todayJobs, monthFuel, monthIncome, monthExpense, recentFuel, activeRoutes, urgentTasks] =
+  const [drivers, vehicles, todayJobs, monthFuel, monthIncome, monthExpense, recentFuel, activeRoutes, urgentTasks, creditCards] =
     await Promise.all([
       prisma.driver.findMany({ where: { status: "active" } }),
       prisma.vehicle.findMany({ where: { status: "active" } }),
@@ -82,6 +88,11 @@ async function getDashboardData() {
         orderBy: [{ priority: "asc" }, { dueDate: "asc" }],
         take: 5,
       }),
+      // Kredi kartları (ödeme uyarıları için)
+      prisma.creditCard.findMany({
+        where: { active: true },
+        include: { expenses: { select: { amount: true, billingMonth: true, billingYear: true } } },
+      }).catch(() => []),
     ]);
 
   // Tüm belge son tarihleri topla
@@ -162,6 +173,27 @@ async function getDashboardData() {
     (d) => getDocStatus(d.expiryDate) === "warning"
   ).length;
 
+  // Kredi kartı ödeme uyarıları (7 gün içinde)
+  const creditCardAlerts: CreditCardAlert[] = creditCards
+    .map((card) => {
+      const day = today.getDate();
+      let billingMonth = today.getMonth() + 1;
+      let billingYear = today.getFullYear();
+      if (day < card.billingDay) {
+        billingMonth = billingMonth === 1 ? 12 : billingMonth - 1;
+        if (billingMonth === 12) billingYear--;
+      }
+      const billingDate = new Date(billingYear, billingMonth - 1, card.billingDay);
+      const paymentDue = new Date(billingDate);
+      paymentDue.setDate(paymentDue.getDate() + card.paymentDaysAfterBilling);
+      const daysToPayment = Math.floor((paymentDue.getTime() - today.getTime()) / 86400000);
+      const periodTotal = card.expenses
+        .filter((e) => e.billingMonth === billingMonth && e.billingYear === billingYear)
+        .reduce((s, e) => s + e.amount, 0);
+      return { id: card.id, name: card.name, bank: card.bank, color: card.color, daysToPayment, paymentDue, periodTotal };
+    })
+    .filter((c) => c.daysToPayment >= 0 && c.daysToPayment <= 7);
+
   // Bugün aktif/planlanmış seferlerde kullanılan araç ID'leri
   const busyVehicleIds = new Set(
     todayJobs
@@ -188,6 +220,7 @@ async function getDashboardData() {
     expiredCount,
     criticalCount,
     warningCount,
+    creditCardAlerts,
   };
   } catch (e) {
     console.error("Dashboard veri hatası:", e);
@@ -272,6 +305,31 @@ export default async function DashboardPage() {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== KREDİ KARTI ÖDEME UYARILARI ===== */}
+      {data.creditCardAlerts.length > 0 && (
+        <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-purple-600" />
+              <span className="font-bold text-purple-800">Kredi Kartı Ödeme Hatırlatması ({data.creditCardAlerts.length})</span>
+            </div>
+            <Link href="/panel/kredikartlari" className="text-xs text-purple-600 hover:underline font-medium">Kartlara git →</Link>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {data.creditCardAlerts.map((c) => (
+              <div key={c.id} className="bg-white border border-purple-200 rounded-xl px-4 py-3 text-sm">
+                <div className="font-bold text-slate-800">{c.name}</div>
+                {c.bank && <div className="text-xs text-slate-400">{c.bank}</div>}
+                <div className="text-purple-700 font-semibold text-base">{formatCurrency(c.periodTotal)}</div>
+                <div className={`text-xs font-bold mt-1 ${c.daysToPayment === 0 ? "text-red-600" : "text-amber-600"}`}>
+                  {c.daysToPayment === 0 ? "⚠️ Son ödeme bugün!" : `⚠️ ${c.daysToPayment} gün kaldı`}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -536,7 +594,9 @@ export default async function DashboardPage() {
             {data.urgentTasks.map((task) => {
               const catColors: Record<string, string> = {
                 evrak: "bg-blue-100 text-blue-700",
+                sanayi: "bg-orange-100 text-orange-700",
                 bakim: "bg-orange-100 text-orange-700",
+                muhasebe: "bg-red-100 text-red-700",
                 sigorta: "bg-purple-100 text-purple-700",
                 vergi: "bg-red-100 text-red-700",
                 arac: "bg-amber-100 text-amber-700",

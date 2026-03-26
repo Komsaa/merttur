@@ -73,9 +73,30 @@ export default function RouteMap({ stops, currentStopIndex, interactive, onMapCl
       }).addTo(map);
 
       if (validStops.length > 1) {
-        const latlngs: [number, number][] = validStops.map((s) => [s.lat!, s.lng!]);
-        L.polyline(latlngs, { color: "#DC2626", weight: 4, opacity: 0.8 }).addTo(map);
-        map.fitBounds(L.latLngBounds(latlngs as [number, number][]).pad(0.1));
+        const coords = validStops.map((s) => [s.lng!, s.lat!].join(",")).join(";");
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+
+        fetch(osrmUrl)
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.routes?.[0]?.geometry?.coordinates) {
+              const latlngs: [number, number][] = data.routes[0].geometry.coordinates.map(
+                ([lng, lat]: [number, number]) => [lat, lng]
+              );
+              L.polyline(latlngs, { color: "#DC2626", weight: 4, opacity: 0.8 }).addTo(map);
+              map.fitBounds(L.latLngBounds(latlngs).pad(0.1));
+            } else {
+              // OSRM başarısız olursa düz çizgi yedek
+              const fallback: [number, number][] = validStops.map((s) => [s.lat!, s.lng!]);
+              L.polyline(fallback, { color: "#DC2626", weight: 4, opacity: 0.8 }).addTo(map);
+              map.fitBounds(L.latLngBounds(fallback).pad(0.1));
+            }
+          })
+          .catch(() => {
+            const fallback: [number, number][] = validStops.map((s) => [s.lat!, s.lng!]);
+            L.polyline(fallback, { color: "#DC2626", weight: 4, opacity: 0.8 }).addTo(map);
+            map.fitBounds(L.latLngBounds(fallback).pad(0.1));
+          });
       }
 
       validStops.forEach((stop, i) => {

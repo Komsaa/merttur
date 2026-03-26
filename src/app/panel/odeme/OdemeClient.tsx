@@ -39,7 +39,7 @@ type Txn = {
   id: string; contactId: string; type: string; direction: string;
   amount: number; paidAmount: number; date: Date; dueDate: Date | null;
   status: string; description: string | null; invoiceNo: string | null;
-  category: string | null;
+  category: string | null; paymentPriority?: number | null;
   contact: { id: string; name: string; type: string };
 };
 type Check = {
@@ -81,6 +81,7 @@ export default function OdemeClient({ contacts, transactions, checks, summary }:
   const [txnForm, setTxnForm] = useState({
     contactId: "", type: "fatura_kesilen", date: format(new Date(), "yyyy-MM-dd"),
     dueDate: "", amount: "", invoiceNo: "", description: "", category: "fatura",
+    paymentPriority: "2",
   });
   const [checkForm, setCheckForm] = useState({
     contactId: "", direction: "aldik", amount: "", dueDate: "", bankName: "", checkNo: "", notes: "",
@@ -206,6 +207,10 @@ export default function OdemeClient({ contacts, transactions, checks, summary }:
     transactions
       .filter((t) => t.direction === "borc" && t.status !== "odendi" && t.status !== "iptal")
       .sort((a, b) => {
+        // Önce öncelik sırası (1=acil, 2=normal, 3=düşük), sonra vade tarihi
+        const pa = a.paymentPriority ?? 2;
+        const pb = b.paymentPriority ?? 2;
+        if (pa !== pb) return pa - pb;
         const da = a.dueDate ? new Date(a.dueDate).getTime() : 9e12;
         const db = b.dueDate ? new Date(b.dueDate).getTime() : 9e12;
         return da - db;
@@ -504,6 +509,19 @@ export default function OdemeClient({ contacts, transactions, checks, summary }:
               </div>
               <div><label>Açıklama</label><input type="text" value={txnForm.description} onChange={(e) => st("description", e.target.value)} placeholder="Detay..." /></div>
             </div>
+            {txnDir === "borc" && (
+              <div>
+                <label>Ödeme Önceliği</label>
+                <div className="flex gap-2">
+                  {[["1", "🔴 Acil"], ["2", "🟡 Normal"], ["3", "⬇️ Düşük"]].map(([v, l]) => (
+                    <button key={v} type="button" onClick={() => st("paymentPriority", v)}
+                      className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all ${txnForm.paymentPriority === v ? "bg-[#1B2437] text-white border-[#1B2437]" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <ModalActions onClose={() => setTxnModal(false)} loading={loading} label="Kaydet" />
           </form>
         </Modal>
@@ -605,6 +623,8 @@ function TxnTable({ txns, direction, onPay, onDelete }: {
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-slate-800 text-sm">{t.contact.name}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[t.status] ?? "bg-slate-100"}`}>{STATUS_LABELS[t.status] ?? t.status}</span>
+                  {direction === "borc" && t.paymentPriority === 1 && <span className="text-xs font-bold text-red-600">🔴 Acil</span>}
+                  {direction === "borc" && t.paymentPriority === 3 && <span className="text-xs text-slate-400">⬇️ Düşük</span>}
                   {t.invoiceNo && <span className="text-xs text-slate-400">{t.invoiceNo}</span>}
                 </div>
                 <div className="text-xs text-slate-400 mt-0.5">

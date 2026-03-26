@@ -299,9 +299,10 @@ model ContactTransaction {
   dueDate     DateTime? // vade tarihi
   status      String    @default("bekliyor") // bekliyor, odendi, kismi, gecikti, iptal
 
-  description String?
-  invoiceNo   String?
-  category    String?   // mazot, sanayi, vergi, servis, kira, diger
+  description     String?
+  invoiceNo       String?
+  category        String?   // mazot, sanayi, vergi, servis, kira, diger
+  paymentPriority Int       @default(2) // 1=acil, 2=normal, 3=düşük
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -394,6 +395,38 @@ model RouteStop {
   lng           Float?
   estimatedTime String  // "07:30"
   notes         String?
+}
+
+// ============ KREDİ KARTLARI ============
+model CreditCard {
+  id                     String               @id @default(cuid())
+  name                   String               // "Garanti İş Kartı"
+  bank                   String?              // "Garanti", "Akbank"...
+  lastFour               String?              // son 4 hane
+  limit                  Float?
+  billingDay             Int                  // hesap kesim günü (1-28)
+  paymentDaysAfterBilling Int                 // son ödeme: kesimden kaç gün sonra
+  color                  String               @default("#1B2437")
+  active                 Boolean              @default(true)
+  notes                  String?              @db.Text
+  expenses               CreditCardExpense[]
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+}
+
+model CreditCardExpense {
+  id           String     @id @default(cuid())
+  cardId       String
+  card         CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  amount       Float
+  date         DateTime
+  description  String
+  category     String     @default("diger") // yakit, sanayi, market, kirtasiye, yemek, fatura, diger
+  merchant     String?
+  receiptPhoto String?
+  billingMonth Int        // 1-12 — hangi ekstreye ait
+  billingYear  Int
+  createdAt    DateTime   @default(now())
 }
 
 // ============ AYARLAR ============

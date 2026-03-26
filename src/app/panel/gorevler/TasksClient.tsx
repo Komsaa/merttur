@@ -16,9 +16,9 @@ import { tr } from "date-fns/locale";
 // ============ SABITLER ============
 const CATEGORIES = {
   evrak: { label: "Evrak İşleri", color: "bg-blue-100 text-blue-700 border-blue-200", dot: "bg-blue-500", icon: "📄" },
-  bakim: { label: "Bakım / Sanayi", color: "bg-orange-100 text-orange-700 border-orange-200", dot: "bg-orange-500", icon: "🔧" },
+  sanayi: { label: "Sanayi / Bakım", color: "bg-orange-100 text-orange-700 border-orange-200", dot: "bg-orange-500", icon: "🔧" },
+  muhasebe: { label: "Muhasebe / Fatura", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500", icon: "💰" },
   sigorta: { label: "Sigorta", color: "bg-purple-100 text-purple-700 border-purple-200", dot: "bg-purple-500", icon: "🛡️" },
-  vergi: { label: "Vergi / Muhasebe", color: "bg-red-100 text-red-700 border-red-200", dot: "bg-red-500", icon: "💰" },
   toplanti: { label: "Toplantı / Görüşme", color: "bg-teal-100 text-teal-700 border-teal-200", dot: "bg-teal-500", icon: "🤝" },
   arac: { label: "Araç İşleri", color: "bg-amber-100 text-amber-700 border-amber-200", dot: "bg-amber-500", icon: "🚌" },
   diger: { label: "Diğer", color: "bg-slate-100 text-slate-600 border-slate-200", dot: "bg-slate-400", icon: "📌" },

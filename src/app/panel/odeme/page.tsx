@@ -10,15 +10,15 @@ async function getData() {
         transactions: true,
         checks: { where: { status: "bekliyor" }, orderBy: { dueDate: "asc" } },
       },
-    }),
+    }).catch(() => []),
     prisma.contactTransaction.findMany({
       orderBy: { date: "desc" },
       include: { contact: { select: { id: true, name: true, type: true } } },
-    }),
+    }).catch(() => []),
     prisma.check.findMany({
       orderBy: { dueDate: "asc" },
       include: { contact: { select: { id: true, name: true } } },
-    }),
+    }).catch(() => []),
   ]);
 
   // Her cari için bakiye hesapla
@@ -82,6 +82,12 @@ async function getData() {
 }
 
 export default async function OdemePage() {
-  const data = await getData();
-  return <OdemeClient {...data} />;
+  try {
+    const data = await getData();
+    return <OdemeClient {...data} />;
+  } catch (e) {
+    console.error("Ödeme sayfa hatası:", e);
+    const empty = { contacts: [], transactions: [], checks: [], summary: { totalReceivable: 0, totalPayable: 0, overdueTotal: 0, pendingChecksIn: 0, pendingChecksOut: 0, urgentChecks: [] } };
+    return <OdemeClient {...empty} />;
+  }
 }

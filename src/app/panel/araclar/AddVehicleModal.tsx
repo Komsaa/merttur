@@ -39,12 +39,15 @@ export default function AddVehicleModal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Sunucu hatası");
+      }
       toast.success("Araç eklendi!");
       setOpen(false);
       router.refresh();
-    } catch {
-      toast.error("Hata oluştu");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Hata oluştu");
     } finally {
       setLoading(false);
     }
@@ -113,7 +116,7 @@ export default function AddVehicleModal() {
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-amber-700 font-semibold">⚠️ Muayene Bitiş (6 ayda bir!)</label>
+                    <label className="text-amber-700 font-semibold">⚠️ Muayene Bitiş (yılda bir)</label>
                     <input type="date" value={form.inspectionExpiry} onChange={(e) => set("inspectionExpiry", e.target.value)} className="border-amber-200 focus:ring-amber-400" />
                   </div>
                   <div>
