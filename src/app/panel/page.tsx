@@ -56,12 +56,12 @@ async function getDashboardData() {
         orderBy: { createdAt: "desc" },
         include: { vehicle: true, driver: true },
       }),
-      // Aktif güzergahlar
+      // Aktif güzergahlar (tablo henüz yoksa boş dön)
       prisma.route.findMany({
         where: { active: true },
         include: { driver: true, vehicle: true, stops: { orderBy: { order: "asc" } } },
         orderBy: { createdAt: "asc" },
-      }),
+      }).catch(() => []),
       // Acil + bugün vadesi gelen görevler
       prisma.task.findMany({
         where: {

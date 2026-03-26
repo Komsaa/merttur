@@ -32,9 +32,17 @@ export default function RouteMap({ stops, currentStopIndex, interactive, onMapCl
       mapInstanceRef.current = null;
     }
 
+    // Leaflet CSS — CDN üzerinden yükle (production'da require CSS güvenilmez)
+    if (!document.getElementById("leaflet-css")) {
+      const link = document.createElement("link");
+      link.id = "leaflet-css";
+      link.rel = "stylesheet";
+      link.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+      document.head.appendChild(link);
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const L = require("leaflet");
-    require("leaflet/dist/leaflet.css");
 
     // Leaflet default icon fix
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
