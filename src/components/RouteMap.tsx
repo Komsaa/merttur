@@ -73,7 +73,7 @@ export default function RouteMap({ stops, currentStopIndex, interactive, onMapCl
       }).addTo(map);
 
       if (validStops.length > 1) {
-        const latlngs = validStops.map((s) => [s.lat!, s.lng!]);
+        const latlngs: [number, number][] = validStops.map((s) => [s.lat!, s.lng!]);
         L.polyline(latlngs, { color: "#DC2626", weight: 4, opacity: 0.8 }).addTo(map);
         map.fitBounds(L.latLngBounds(latlngs as [number, number][]).pad(0.1));
       }
